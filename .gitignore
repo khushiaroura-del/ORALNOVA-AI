@@ -1,0 +1,31 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+.DS_Store
+Thumbs.db
+
+# Local datasets and generated reports
+data/
+data_binary/
+reports/
+
+# Model checkpoints
+models/*.pth
+
+# Temporary repair and debugging files
+app.py.backup
+app.py.broken
+app_broken_backup.py
+fix_app.py
+fix_encoding.py
+inspect2.py
+inspect3.py
+inspect4.py
+inspect5.py
+inspect_app.py
+write_app.py
