@@ -17,14 +17,7 @@ from PIL import Image
 # Ensure src is importable
 sys.path.insert(0, str(Path(__file__).parent))
 
-from src import (
-    CLASS_NAMES,
-    CLASS_DESCRIPTIONS,
-    CLASS_RISK,
-    NUM_CLASSES,
-    BINARY_CLASS_NAMES,
-    BINARY_NUM_CLASSES,
-)
+from src import CLASS_NAMES, CLASS_DESCRIPTIONS, CLASS_RISK, NUM_CLASSES
 from src.image_quality import assess_quality, quality_report_to_dict
 from src.model import build_model, get_model_info
 from src.screening_pipeline import OralLesionScreeningPipeline
@@ -241,8 +234,7 @@ st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
-DEFAULT_5CLASS_CHECKPOINT = "models/oralnova_best.pth"
-DEFAULT_2CLASS_CHECKPOINT = "models/oralnova_binary_best.pth"
+DEFAULT_CHECKPOINT = "models/oralnova_binary_best.pth"
 
 # ---------------------------------------------------------------------------
 # Session state
@@ -251,8 +243,6 @@ if "pipeline" not in st.session_state:
     st.session_state.pipeline = None
 if "pipeline_loaded_path" not in st.session_state:
     st.session_state.pipeline_loaded_path = None
-if "selected_mode" not in st.session_state:
-    st.session_state.selected_mode = "Two-Class Research Experiment (Benign vs Malignant)"
 
 # ---------------------------------------------------------------------------
 # Sidebar
@@ -268,59 +258,31 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
-    st.markdown("### Operational Mode")
-    mode_option = st.radio(
-        "Active Configuration",
-        [
-            "Two-Class Research Experiment (Benign vs Malignant)",
-            "Five-Class Clinical Screening (Prototype)",
-        ],
-        index=0 if "Two-Class" in st.session_state.selected_mode else 1,
-        help="Select between the 2-class benchmark experiment and the 5-class clinical screening prototype."
-    )
-    st.session_state.selected_mode = mode_option
-    is_binary = "Two-Class" in mode_option
-
-    if is_binary:
-        default_ckpt = DEFAULT_2CLASS_CHECKPOINT
-        active_classes = BINARY_CLASS_NAMES
-        mode_badge = "EXPERIMENTAL 2-CLASS BENCHMARK"
-        mode_pill = "&#x1F52C; 2-Class Benchmark"
-        mode_desc = "Benign Lesion vs Malignant Lesion"
-    else:
-        default_ckpt = DEFAULT_5CLASS_CHECKPOINT
-        active_classes = CLASS_NAMES
-        mode_badge = "CLINICAL 5-CLASS PROTOTYPE"
-        mode_pill = "&#x1F4CA; 5-Class Multi-Condition"
-        mode_desc = "5 Oral Lesion Categories"
-
     st.markdown("### Model Settings")
     checkpoint_path = st.text_input(
         "Checkpoint Path",
-        value=default_ckpt,
+        value=DEFAULT_CHECKPOINT,
         help="Path to a trained .pth file.",
     )
 
     load_btn = st.button("Reload Model", use_container_width=True)
 
     st.markdown("<hr style='border-color:#1E3045;'>", unsafe_allow_html=True)
-    st.markdown("### About Active Mode")
+    st.markdown("### About")
     st.markdown(
-        f"<div style='color:rgba(244,245,242,0.6);font-size:0.80rem;line-height:1.6;'>"
-        f"<b>Active Mode:</b> {mode_desc}<br>"
-        f"<b>Model:</b> MobileNetV3-Small<br>"
-        f"<b>Classes:</b> {len(active_classes)} ({', '.join(active_classes)})<br>"
-        f"<b>Explainability:</b> Grad-CAM Heatmap<br>"
-        f"<b>Device:</b> CPU<br>"
-        f"<b>Modality:</b> Clinical photographs</div>",
+        "<div style='color:rgba(244,245,242,0.6);font-size:0.80rem;line-height:1.6;'>"
+        "<b>Model:</b> MobileNetV3-Small<br>"
+        "<b>Classes:</b> 2 output classes (Benign / Malignant)<br>"
+        "<b>Explainability:</b> Grad-CAM<br>"
+        "<b>Device:</b> CPU<br>"
+        "<b>Modality:</b> Clinical photographs</div>",
         unsafe_allow_html=True,
     )
 
     st.markdown("<hr style='border-color:#1E3045;'>", unsafe_allow_html=True)
     st.markdown("### Class Reference")
-    for cls in active_classes:
-        desc = CLASS_DESCRIPTIONS.get(cls, "")
-        risk = CLASS_RISK.get(cls, "low")
+    for cls, desc in CLASS_DESCRIPTIONS.items():
+        risk = CLASS_RISK[cls]
         st.markdown(
             f"<div style='margin-bottom:0.6rem;'>"
             f"<span class='risk-badge risk-{risk}'>{risk.upper()}</span> "
@@ -333,9 +295,8 @@ with st.sidebar:
     st.markdown("<hr style='border-color:#1E3045;'>", unsafe_allow_html=True)
     st.markdown(
         "<div class='disclaimer-box'>"
-        "<b>Research Disclaimer</b><br>"
-        "This is an educational AI research prototype. NOT a medical device. "
-        "Patient identifiers were not supplied in the source archive; patient-level leakage cannot be ruled out. "
+        "<b>Medical Disclaimer</b><br>"
+        "This is an educational AI prototype. NOT a medical device. "
         "Always consult a qualified healthcare provider.</div>",
         unsafe_allow_html=True,
     )
@@ -345,7 +306,6 @@ with st.sidebar:
 # ---------------------------------------------------------------------------
 st.markdown(
     "<div class='oralnova-hero'>"
-    f"<div style='margin-bottom:0.7rem;'><span class='risk-badge' style='background:rgba(114,228,242,0.12);color:#72E4F2;border:1px solid #72E4F2;padding:0.25rem 0.65rem;border-radius:20px;font-size:0.75rem;font-weight:600;'>{mode_badge}</span></div>"
     "<div class='hero-title'>&#x1F9B7; ORALNOVA-AI</div>"
     "<p class='hero-tagline'>"
     "Lightweight Deep Learning for Oral Lesion Screening &middot; "
@@ -353,7 +313,7 @@ st.markdown(
     "<div class='hero-pills'>"
     "<span class='pill'>&#x1F9E0; MobileNetV3-Small</span>"
     "<span class='pill'>&#x1F525; Grad-CAM XAI</span>"
-    f"<span class='pill'>{mode_pill}</span>"
+    "<span class='pill'>&#x1F4CA; 2 Output Classes</span>"
     "<span class='pill'>&#x1F5BC; Quality Analysis</span>"
     "<span class='pill'>&#x26A1; Real-Time Inference</span>"
     "<span class='pill'>&#x1F393; Educational Prototype</span>"
@@ -617,90 +577,73 @@ tab1, tab2, tab3 = st.tabs(["Model Architecture", "Evaluation Results", "Dataset
 
 with tab1:
     tc1, tc2 = st.columns(2)
+    output_classes = pipeline.class_names if pipeline.is_loaded else CLASS_NAMES
+    info = pipeline.model_info if pipeline.is_loaded else {}
+
     with tc1:
         st.markdown("<div class='nova-card'>", unsafe_allow_html=True)
         st.markdown("<div class='nova-card-title'>Architecture Details</div>", unsafe_allow_html=True)
+
+        total_params = info.get("total_params_m")
+        param_text = f"{total_params:.2f} M" if total_params is not None else "Unavailable"
+        architecture = info.get("architecture", "Not loaded")
+        device_text = str(pipeline.device) if pipeline.is_loaded else "Not loaded"
+
         st.markdown(
-            f"""
-| Property | Value |
-|---|---|
-| Architecture | MobileNetV3-Small |
-| Input | 224 x 224 x 3 (RGB) |
-| Total Params | ~2.54 M |
-| Backbone | ImageNet pre-trained |
-| Head | Linear (576 -> {len(active_classes)}) |
-| Optimiser | AdamW + CosineAnnealing |
-| Loss | CrossEntropyLoss |
-""",
-            unsafe_allow_html=False,
+            f"| Property | Value |\n"
+            f"|---|---|\n"
+            f"| Architecture | {architecture} |\n"
+            f"| Input | 224 x 224 x 3 (RGB) |\n"
+            f"| Total Params | {param_text} |\n"
+            f"| Output Classes | {len(output_classes)} |\n"
+            f"| Head | Checkpoint-defined output layer |\n"
+            f"| Device | {device_text} |"
         )
         st.markdown("</div>", unsafe_allow_html=True)
+
     with tc2:
         st.markdown("<div class='nova-card'>", unsafe_allow_html=True)
         st.markdown("<div class='nova-card-title'>Output Classes</div>", unsafe_allow_html=True)
-        for i, cls in enumerate(active_classes):
-            risk = CLASS_RISK.get(cls, "low")
+
+        for i, cls in enumerate(output_classes):
+            risk = CLASS_RISK.get(cls, "unknown")
             st.markdown(
                 f"<div style='display:flex;align-items:center;gap:0.6rem;padding:0.45rem 0;"
                 f"border-bottom:1px solid #1E3045;'>"
-                f"  <div style='background:#1E3045;color:#72E4F2;font-size:0.75rem;font-weight:600;"
-                f"       padding:0.15rem 0.45rem;border-radius:6px;'>{i}</div>"
-                f"  <div style='flex:1;color:#F4F5F2;font-size:0.85rem;font-weight:500;'>{cls}</div>"
-                f"  <span class='risk-badge risk-{risk}'>{risk.upper()}</span>"
-                f"</div>",
+                f"<div style='background:#1E3045;color:#72E4F2;font-size:0.75rem;font-weight:600;"
+                f"padding:0.15rem 0.45rem;border-radius:6px;'>{i}</div>"
+                f"<div style='flex:1;color:#F4F5F2;font-size:0.85rem;font-weight:500;'>{cls}</div>"
+                f"<span class='risk-badge risk-{risk}'>{risk.upper()}</span></div>",
                 unsafe_allow_html=True,
             )
+
         st.markdown("</div>", unsafe_allow_html=True)
 
 with tab2:
-    eval_filename = "evaluation_results_binary.json" if is_binary else "evaluation_results.json"
-    eval_results = load_evaluation_results("reports", eval_filename)
+    eval_results = load_evaluation_results("reports")
     if eval_results:
         acc = eval_results.get("accuracy", 0)
         report = eval_results.get("classification_report", {})
-        bm = eval_results.get("binary_metrics", {})
-
-        if bm:
-            colA, colB, colC, colD = st.columns(4)
-            with colA: st.metric("Test Accuracy", f"{acc*100:.1f}%")
-            with colB: st.metric("Sensitivity (Malignant)", f"{bm.get('sensitivity',0)*100:.1f}%")
-            with colC: st.metric("Specificity (Benign)", f"{bm.get('specificity',0)*100:.1f}%")
-            with colD: st.metric("F1-Score", f"{bm.get('f1_score',0):.3f}")
-
-            st.markdown(
-                f"<div style='background:rgba(19,32,48,0.7);padding:0.8rem;border-radius:8px;margin:0.8rem 0;font-size:0.83rem;border:1px solid #1E3045;'>"
-                f"<b>Test Set Counts (49 held-out images):</b> "
-                f"True Positives: {bm.get('true_positives', 0)} | "
-                f"True Negatives: {bm.get('true_negatives', 0)} | "
-                f"False Positives: {bm.get('false_positives', 0)} | "
-                f"False Negatives: {bm.get('false_negatives', 0)}"
-                f"</div>",
-                unsafe_allow_html=True,
-            )
-        else:
-            macro = report.get("macro avg", {})
-            colA, colB, colC, colD = st.columns(4)
-            with colA: st.metric("Test Accuracy", f"{acc*100:.1f}%")
-            with colB: st.metric("Macro Precision", f"{macro.get('precision',0):.3f}")
-            with colC: st.metric("Macro Recall", f"{macro.get('recall',0):.3f}")
-            with colD: st.metric("Macro F1", f"{macro.get('f1-score',0):.3f}")
+        macro = report.get("macro avg", {})
+        colA, colB, colC, colD = st.columns(4)
+        with colA: st.metric("Test Accuracy", f"{acc*100:.1f}%")
+        with colB: st.metric("Macro Precision", f"{macro.get('precision',0):.3f}")
+        with colC: st.metric("Macro Recall", f"{macro.get('recall',0):.3f}")
+        with colD: st.metric("Macro F1", f"{macro.get('f1-score',0):.3f}")
 
         cm = eval_results.get("confusion_matrix")
-        classes = eval_results.get("classes", active_classes)
+        classes = eval_results.get("classes", CLASS_NAMES)
         if cm:
             try:
                 from src.utils import plot_confusion_matrix
                 cm_img = plot_confusion_matrix(cm, classes)
-                st.image(cm_img, caption=f"Normalised Confusion Matrix ({' vs '.join(classes)})", width=500)
+                st.image(cm_img, caption="Normalised Confusion Matrix", width=500)
             except Exception:
                 st.info("Confusion matrix plot unavailable.")
-
-        if eval_results.get("limitations"):
-            st.info(f"**Research Disclaimer / Limitation:** {eval_results['limitations']}")
     else:
         st.info(
-            f"No evaluation results found for this mode. "
-            f"Run: `python -m src.evaluate --data_dir {'data_binary' if is_binary else 'data'} --checkpoint {checkpoint_path}`"
+            "No evaluation results found. "
+            "Run: `python -m src.evaluate --data_dir data` after training."
         )
 
 with tab3:
@@ -751,3 +694,4 @@ st.markdown(
     "</div>",
     unsafe_allow_html=True,
 )
+
